@@ -30,6 +30,7 @@
 #   * seed validation, safer cancel handling, vectorised fidelity scan
 #   * date axes formatted as dates in the Compare plot
 #   * polish: stat count-up, floating orbs, icon toasts, meta/OG tags
+#   * v2.2: upload progress bar + instant client-side size/type checks
 #
 # Engine: synthpop (model-based, runs in a callr background process)
 #         with an automatic ladder of fallbacks and a Turbo resampler.
@@ -45,7 +46,7 @@ MAX_ROWS        <- 1e6
 MAX_LEVELS      <- 50
 MAX_SYN_SECONDS <- 900
 MISSING_TOKENS  <- c("?", "", "NA", "N/A", "na", "NaN", "null", "NULL")
-APP_VERSION     <- "2.1"
+APP_VERSION     <- "2.2"
 GITHUB_URL      <- "https://github.com/AmiraliFirouzi"
 
 ENGINE_PRESETS <- list(
@@ -1023,6 +1024,14 @@ body::before{content:'';position:fixed;top:0;left:0;right:0;bottom:0;z-index:-1;
 .up-sub{font-size:12.5px;color:var(--faint);margin:0 0 16px;text-transform:uppercase;letter-spacing:.08em}
 .sdg-upload .sdg-btn-sec{padding:11px 22px}
 .up-hint{font-size:11.5px;color:var(--faint);margin:16px 0 0}
+.up-progress{margin-top:14px;display:none;flex-direction:column;align-items:center;gap:8px}
+.up-progress.on{display:flex}
+.up-status{font-size:12.5px;color:var(--dim);letter-spacing:.01em}
+.up-status.err{color:var(--err)}
+.up-track{width:240px;height:5px;border-radius:99px;background:rgba(255,255,255,.10);overflow:hidden}
+.up-bar{height:100%;width:0%;background-image:var(--grad);border-radius:99px;transition:width .25s ease}
+.up-progress.nopct .up-bar{width:40%!important;animation:sdg-slide 1.25s linear infinite}
+.up-progress.err .up-track{display:none}
 .vh-file{position:absolute;top:0;left:0;width:1px;height:1px;opacity:0;overflow:hidden;pointer-events:none}
 .sdg-alt{margin-top:14px;text-align:center}
 .sdg-linkbtn{background-color:transparent!important;background-image:none!important;border:none!important;color:var(--lav)!important;font-size:13.5px!important;font-weight:600;padding:7px 12px!important;border-radius:9px!important;box-shadow:none!important;text-shadow:none!important;font-family:inherit;transition:background .2s,color .2s}
@@ -1736,6 +1745,94 @@ button.m-chip-clean i{font-size:11px}
     });
   }
 
+  /* =============================================================
+     UPLOAD UX — instant validation + visible progress.
+     The native file input is visually hidden, so a slow upload
+     used to look like 'nothing happens'. This mirrors the hidden
+     progress bar and shows clear states.
+     ============================================================= */
+  function initUploadUX() {
+    var fin = document.getElementById('file1');
+    if (!fin) return;
+    var wrap = document.getElementById('upProgress');
+    var tx = document.getElementById('upStatusTx');
+    var bar = document.getElementById('upBar');
+    var MAXMB = 25;
+    var obs = null;
+    function nativeBar() {
+      var c = fin.closest('.shiny-input-container') || fin.parentElement;
+      return c ? c.querySelector('.progress-bar') : null;
+    }
+    function sync() {
+      var p = nativeBar();
+      if (p && bar) bar.style.width = (p.style.width || '0%');
+    }
+    function stopObs() { if (obs) { obs.disconnect(); obs = null; } }
+    function busy(on) {
+      ['browseBtn', 'loadDemo', 'generateBtn', 'resetBtn'].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.disabled = !!on;
+        el.style.opacity = on ? '.55' : '';
+        el.style.pointerEvents = on ? 'none' : '';
+      });
+    }
+    function showErr(msg) {
+      stopObs();
+      if (wrap) wrap.className = 'up-progress on err';
+      if (tx) { tx.className = 'up-status err'; tx.textContent = msg; }
+      if (bar) bar.style.width = '0%';
+      try { fin.value = ''; } catch (e) {}
+      busy(false);
+      showToast(msg, true);
+    }
+    window.sdgUploadPhase = function (msg) {
+      stopObs();
+      if (wrap) wrap.className = 'up-progress on';
+      if (tx) { tx.className = 'up-status'; tx.textContent = msg; }
+      if (bar) bar.style.width = '100%';
+    };
+    window.sdgUploadDone = function () {
+      stopObs();
+      if (wrap) wrap.className = 'up-progress';
+      if (tx) { tx.className = 'up-status'; tx.textContent = ''; }
+      if (bar) bar.style.width = '0%';
+      busy(false);
+    };
+    fin.addEventListener('change', function () {
+      var f = fin.files && fin.files[0];
+      if (!f) return;
+      var ext = (f.name.split('.').pop() || '').toLowerCase();
+      if (['csv', 'tsv', 'txt', 'xlsx', 'xls'].indexOf(ext) < 0) {
+        showErr('Unsupported file type - use CSV, TSV or Excel.');
+        return;
+      }
+      var mb = f.size / 1048576;
+      if (mb > MAXMB) {
+        showErr('File is too large (' + mb.toFixed(1) + ' MB). Keep it under ' + MAXMB + ' MB.');
+        return;
+      }
+      stopObs();
+      if (wrap) wrap.className = 'up-progress on';
+      if (tx) {
+        tx.className = 'up-status';
+        tx.textContent = 'Uploading ' + f.name + ' (' +
+          (mb < 0.1 ? Math.max(1, Math.round(f.size / 1024)) + ' KB' : mb.toFixed(1) + ' MB') + ')...';
+      }
+      if (bar) bar.style.width = '0%';
+      busy(true);
+      var p = nativeBar();
+      if (p) {
+        wrap.classList.remove('nopct');
+        obs = new MutationObserver(sync);
+        obs.observe(p, { attributes: true, attributeFilter: ['style'] });
+        sync();
+      } else if (wrap) {
+        wrap.classList.add('nopct');
+      }
+    });
+  }
+
   function initReveal() {
     try {
       if (!('IntersectionObserver' in window)) return;
@@ -1762,6 +1859,7 @@ button.m-chip-clean i{font-size:11px}
     inited = true;
     enhanceAll();
     initDnD();
+    initUploadUX();
     initReveal();
     initSpy();
     watchStats();
@@ -1920,6 +2018,9 @@ button.m-chip-clean i{font-size:11px}
                               onclick = "document.getElementById('file1').click()",
                               tags$i(class = "fa-solid fa-folder-open"), "Browse files"),
                   tags$p(class = "up-hint", "CSV · TSV · Excel · up to 25 MB — processed only within this session."),
+                  div(class = "up-progress", id = "upProgress",
+                      div(class = "up-status", id = "upStatusTx", ""),
+                      div(class = "up-track", div(class = "up-bar", id = "upBar"))),
                   div(class = "vh-file",
                       fileInput("file1", NULL, accept = c(".csv", ".tsv", ".txt", ".xlsx", ".xls"),
                                 buttonLabel = "Browse", placeholder = "No file selected"))
@@ -2193,11 +2294,14 @@ server <- function(input, output, session) {
     fin <- input$file1
     if (is.null(fin) || identical(fin$name, "")) return()
 
+    shinyjs::runjs("window.sdgUploadPhase && window.sdgUploadPhase('Upload received - processing...')")
+
     size_mb <- fin$size / 1024^2
     if (size_mb > MAX_FILE_MB) {
       notify(paste0("File is too large (", round(size_mb, 1), " MB). Please keep it under ",
                     MAX_FILE_MB, " MB."), "error", 7)
       shinyjs::reset("file1"); clear_file_input()
+      shinyjs::runjs("window.sdgUploadDone && window.sdgUploadDone();")
       return()
     }
 
@@ -2220,15 +2324,18 @@ server <- function(input, output, session) {
     if (is.null(df)) {
       notify(paste0("Could not read the file: ", err), "error", 8)
       shinyjs::reset("file1"); clear_file_input()
+      shinyjs::runjs("window.sdgUploadDone && window.sdgUploadDone();")
       return()
     }
     if (nrow(df) < 3 || ncol(df) < 2) {
       notify("Synthesis needs at least 3 rows and 2 columns.", "error", 6)
       shinyjs::reset("file1"); clear_file_input()
+      shinyjs::runjs("window.sdgUploadDone && window.sdgUploadDone();")
       return()
     }
 
     ingest(df, fin$name, size_mb)
+    shinyjs::runjs("window.sdgUploadDone && window.sdgUploadDone();")
   })
 
   observeEvent(input$loadDemo, {
