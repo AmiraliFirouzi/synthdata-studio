@@ -2,7 +2,7 @@
 
 # SynthData Studio
 
-**ساخت داده‌ی مصنوعی با وفاداری آماری از فایل‌های CSV / TSV / Excel — یک اپلیکیشن تک‌فایلی R + Shiny**
+**ساخت داده‌ی مصنوعی با وفاداری به روابط آماری**
 
 [![R >= 4.1](https://img.shields.io/badge/R-%3E%3D%204.1-276DC3?logo=r&logoColor=white)](https://www.r-project.org/)
 [![Built with Shiny](https://img.shields.io/badge/Built%20with-Shiny-447099)](https://shiny.posit.co/)
