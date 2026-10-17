@@ -1,96 +1,92 @@
-<div dir="rtl">
-
 # SynthData Studio
 
-**ساخت داده‌ی مصنوعی با وفاداری به روابط آماری**
+**Generate synthetic data that preserves real statistical relationships**
 
 [![R >= 4.1](https://img.shields.io/badge/R-%3E%3D%204.1-276DC3?logo=r&logoColor=white)](https://www.r-project.org/)
 [![Built with Shiny](https://img.shields.io/badge/Built%20with-Shiny-447099)](https://shiny.posit.co/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#مشارکت-و-گزارش-باگ)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](#contributing)
 
-**SynthData Studio** یک استودیوی مستقل برای تولید داده‌ی مصنوعی است: فایل دیتاست خود را می‌دهید و نسخه‌ی مصنوعی آن را می‌گیرید؛ به‌طوری‌که توزیع‌ها، همبستگی‌ها و ساختار دسته‌بندی‌ها حفظ می‌شوند. هیچ سرویس یا API شخص‌ثالثی درگیر نیست و داده‌ها فقط درون سشن خود اپ پردازش می‌شوند؛ می‌توانید همین ریپو را لوکال اجرا کنید یا از نسخه‌ی هاست‌شده استفاده کنید.
+**SynthData Studio** is a self-contained studio for generating synthetic data: upload your dataset and get a statistically faithful synthetic version of it — distributions, correlations and category structure preserved. No third-party services or APIs are involved, and your data is processed only within the app's own session. You can run this repository locally or use the hosted version.
 
-## 🌐 نسخه‌ی آنلاین
+## 🌐 Live demo
 
-بدون نصب هیچ‌چیز، همین حالا امتحان کنید:
+Try it right now — no installation needed:
 
-**🔗 [اجرای آنلاین SynthData Studio](https://01a144fc-b57d-a04c-a5fd-940bb4e2d7be.share.connect.posit.cloud/)**
-
----
-
-## ✨ امکانات
-
-- **سه موتور با سرعت و دقت متفاوت**
-  - 🚀 **Turbo** — نمونه‌برداری سطری با نویز کوچک؛ خروجی در چند ثانیه
-  - ⚖️ **Balanced** — مدل‌سازی ستون‌به‌ستون با قوی‌ترین پیش‌بینی‌کننده‌ها (پیشنهادی)
-  - 💎 **High fidelity** — نمونه‌ی بیشتر و همه‌ی پیش‌بینی‌کننده‌ها برای بالاترین وفاداری
-- **پاک‌سازی خودکار داده** هنگام بارگذاری (تبدیل انواع، تشخیص تاریخ، حذف ستون‌های بی‌استفاده، گزارش کامل تغییرات)
-- **اعتبارسنجی کیفیت** پس از تولید: امتیاز کل، وفاداری هر ستون و ماتریس همبستگی
-- **نمودار مقایسه‌ی** توزیع اصلی و مصنوعی برای هر متغیر
-- **اجرا در پردازش پس‌زمینه** با نوار پیشرفت زنده و امکان لغو
-- حفظ محدودیت‌های معنایی مقادیر (درصدها بین ۰ تا ۱۰۰، مقادیر غیرمنفی و ...)
-- خروجی **CSV / Excel / JSON**
-- رابط کاربری تاریک و مدرن، seed قابل تکرار
+**🔗 [Run SynthData Studio online](https://01a144fc-b57d-a04c-a5fd-940bb4e2d7be.share.connect.posit.cloud/)**
 
 ---
 
-## 🚀 نصب و اجرا
+## ✨ Features
 
-پیش‌نیاز: R نسخه ۴.۱ یا بالاتر (پروژه با R 4.5 تست شده است)
+- **Three engines with different speed / fidelity trade-offs**
+  - 🚀 **Turbo** — whole-row resampling with small perturbations; output in seconds
+  - ⚖️ **Balanced** — column-by-column modeling with the strongest predictors (recommended)
+  - 💎 **High fidelity** — larger fit sample and all predictors for maximum fidelity
+- **Automatic data cleaning** on upload (type conversion, date detection, dropping unusable columns, full change report)
+- **Quality validation** after generation: overall score, per-column fidelity and a correlation matrix
+- **Compare charts** of the original vs. synthetic distribution for every variable
+- **Background execution** with a live progress bar and a cancel button
+- Semantic value constraints respected (percentages stay within 0–100, non-negative values stay non-negative, etc.)
+- Export to **CSV / Excel / JSON**
+- Modern dark UI, reproducible runs via seed
 
-یک‌بار بسته‌های لازم را نصب کنید:
+---
+
+## 🚀 Install and run
+
+Requires R 4.1 or newer (tested with R 4.5).
+
+Install the required packages once:
 
 ```r
 install.packages(c("shiny", "shinyjs", "synthpop", "callr",
                    "readxl", "writexl", "jsonlite"))
 ```
 
-سپس برنامه را اجرا کنید:
+Then run the app:
 
 ```r
 shiny::runApp("app.R")
 ```
 
-> **نکته:** بسته‌های `shiny` و `shinyjs` اجباری هستند. موتورهای مدل‌محور به `synthpop` و اجرای پس‌زمینه به `callr` نیاز دارند؛ اگر نصب نباشند برنامه خودش هشدار می‌دهد و موتور Turbo بدون آن‌ها هم کار می‌کند. برای ورودی اکسل `readxl`، خروجی اکسل `writexl` و خروجی JSON بسته‌ی `jsonlite` لازم است.
+> **Note:** `shiny` and `shinyjs` are required. The model-based engines need `synthpop` and background execution needs `callr`; if these are missing the app warns you and the Turbo engine still works without them. `readxl` is needed for Excel input, `writexl` for Excel output and `jsonlite` for JSON export.
 
 ---
 
-## 📖 نحوه استفاده
+## 📖 Usage
 
-1. فایل دیتاست (CSV / TSV / Excel) را بکشید و رها کنید — یا دیتاست دمو را بارگذاری کنید
-2. موتور، تعداد سطر، متد و seed را تنظیم کنید
-3. دکمه‌ی **Generate synthetic data** را بزنید
-4. در تب‌های **Preview / Compare / Quality** کیفیت خروجی را بررسی کنید
-5. خروجی را دانلود کنید (CSV / Excel / JSON)
-
----
-
-## 🏗️ نمای کلی فنی
-
-- تک‌فایل و مبتنی بر R + Shiny است و بدون هیچ سرویس بیرونی کار می‌کند
-- موتور مدل‌محور بر پایه‌ی **synthpop** است و داخل یک **پروسه‌ی جدا (callr)** اجرا می‌شود تا رابط کاربری پاسخ‌گو بماند
-- اگر مدل‌سازی رد شود، به‌صورت خودکار نردبانی از fallbackها (تغییر متد، imputation، CART) امتحان می‌شود
-- اگر اجرا از بودجه‌ی زمانی بگذرد، موتور Turbo به‌عنوان خروجی جایگزین ارائه می‌شود تا دست‌خالی نمانید
+1. Drag & drop your dataset (CSV / TSV / Excel) — or load the built-in demo dataset
+2. Pick the engine, number of rows, method and seed
+3. Click **Generate synthetic data**
+4. Inspect the output in the **Preview / Compare / Quality** tabs
+5. Download the result (CSV / Excel / JSON)
 
 ---
 
-## ⚠️ وضعیت پروژه
+## 🏗️ Technical overview
 
-این پروژه در حال توسعه است و **ممکن است باگ‌هایی داشته باشد**؛ حتماً در نسخه‌های بعدی اصلاح می‌کنم. اگر با مشکلی روبه‌رو شدید، لطفاً گزارش دهید.
-
-## 🤝 مشارکت و گزارش باگ
-
-از مشارکت شما صمیمانه استقبال می‌کنم! 🙌
-
-- اگر باگ یا مشکلی دیدید، یک **Issue** باز کنید
-- اگر ایده یا بهبودی دارید، **Pull Request** بفرستید
-- پیشنهادها و بازخوردها همیشه خوش‌آمد هستند
+- Single-file, built on R + Shiny, and works without any external services
+- The model-based engine is powered by **synthpop** and runs inside a **separate process (callr)** so the UI stays responsive
+- If modeling is rejected, a ladder of fallbacks is tried automatically (method switching, imputation, CART)
+- If a run exceeds its time budget, Turbo output is served instead so you never leave empty-handed
 
 ---
 
-## 📄 لایسنس
+## ⚠️ Project status
 
-این پروژه تحت لایسنس **MIT** منتشر شده است. فایل [LICENSE](LICENSE) را ببینید.
+This project is under active development and **may have bugs** — I will keep fixing them in future releases. If you run into a problem, please report it.
 
-</div>
+## 🤝 Contributing
+
+Contributions are warmly welcome! 🙌
+
+- Found a bug? Open an **Issue**
+- Have an idea or an improvement? Send a **Pull Request**
+- Suggestions and feedback are always welcome
+
+---
+
+## 📄 License
+
+Released under the **MIT** license. See [LICENSE](LICENSE).
